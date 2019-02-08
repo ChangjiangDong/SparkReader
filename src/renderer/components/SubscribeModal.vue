@@ -64,6 +64,7 @@ export default {
           this.loading = false
           res.feedUrls.map((item) => {
             item.title = he.unescape(item.title)
+            item.link = res.site.url
             return item
           })
           if (res.feedUrls.length === 0) {

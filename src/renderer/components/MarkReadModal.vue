@@ -14,7 +14,9 @@ export default {
       this.$refs.markallread.hide()
     },
     markAllRead () {
-      this.$store.dispatch('markAllRead')
+      this.$store.dispatch('markAllRead', {
+        accounts: this.$store.state.Accounts.accounts
+      })
       this.$refs.markallread.hide()
     }
   }

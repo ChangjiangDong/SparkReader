@@ -5,12 +5,13 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import _ from 'lodash'
 import Fuse from 'fuse.js'
 import cacheService from '../../services/cacheArticle'
+import { FeverSync, MarkStat } from '../../fever/feverapi'
 
 dayjs.extend(relativeTime)
 
 const state = {
   articles: [],
-  type: 'all',
+  type: 'unread',
   search: '',
   feed: ''
 }
@@ -20,7 +21,7 @@ const filters = {
   unread: articles => articles.filter(article => !article.read),
   read: articles => articles.filter(article => article.read),
   favourites: articles => articles.filter(article => article.favourite),
-  feed: (articles, feed) => articles.filter(article => article.feed_id === feed),
+  feed: (articles, feed) => articles.filter(article => article.feed_id === feed || article.feed_id === _.toInteger(feed)),
   saved: articles => articles.filter(article => article.offline),
   all: articles => articles
 }
@@ -38,7 +39,19 @@ const searchOption = {
 
 const getters = {
   filteredArticles: state => {
-    const orderedArticles = _.orderBy(state.articles, ['pubDate'], ['desc'])
+    let orderedArticles
+    if (state.feed) {
+      // feed filter toolbar
+      orderedArticles = _.orderBy(state.articles, ['pubDate'], ['desc'])
+      orderedArticles = filters['feed'](orderedArticles, state.feed)
+      if (state.type === 'feed') {
+        // default set to unread
+        return filters['unread'](orderedArticles, state.feed)
+      }
+    } else {
+      // all filter
+      orderedArticles = _.orderBy(state.articles, ['pubDate'], ['desc'])
+    }
     if (state.type !== 'feed' && state.type !== 'search') {
       return filters[state.type](orderedArticles)
     }
@@ -54,10 +67,39 @@ const getters = {
 }
 
 const mutations = {
-  LOAD_ARTICLES (state, articles) {
-    state.articles = articles.map((item) => {
-      item.feed_title = _.truncate(item.feed_title, { length: 20 })
-      item.pubDate = dayjs(item.pubDate).fromNow()
+  LOAD_ARTICLES (state, payload) {
+    state.articles = payload.articles.map((item) => {
+      if (item.created_on_time) {
+        // fever compatible
+        const feed = _.find(payload.feeds, { _id: item.feed_id })
+        item.created_on_time = item.created_on_time * 1000
+        item.pubdate = item.created_on_time
+        item.pubDate = item.created_on_time
+        item.description = item.html
+        item.origlink = item.url
+        item.favourite = item.is_saved !== 0
+        item.read = item.is_read !== 0
+        if (feed) {
+          item.meta = {
+            title: feed.title,
+            link: feed.site_url,
+            favicon: feed.favicon
+          }
+        }
+        if (!item.meta) {
+          item.meta = {
+            title: item.title,
+            link: '',
+            favicon: undefined
+          }
+        }
+      }
+      item.meta.title = _.truncate(item.meta.title, { length: 20 })
+      if (!item.meta.favicon) {
+        // default icon
+        item.meta.favicon = item.favicon
+      }
+      item.pubdate = dayjs(item.pubdate).fromNow()
       if (!('offline' in item)) {
         item.offline = false
       }
@@ -66,13 +108,27 @@ const mutations = {
   },
   ADD_ARTICLES (state, articles) {
     if (articles) {
-      articles.feed_title = _.truncate(articles.feed_title, { length: 20 })
-      articles.pubDate = dayjs(articles.pubDate).fromNow()
+      articles.meta.title = _.truncate(articles.meta.title, { length: 20 })
+      articles.pubdate = dayjs(articles.pubdate).fromNow()
       state.articles.unshift(articles)
     }
   },
   MARK_ACTION (state, data) {
-    const index = _.findIndex(state.articles, { '_id': data.id })
+    if (data.feed_id) {
+      // mark feed as read
+      state.articles.map((item) => {
+        if (item.feed_id === data.feed_id || item.feed_id === _.toInteger(data.feed_id)) {
+          item.read = true
+        }
+        return item
+      })
+      return
+    }
+    let index = _.findIndex(state.articles, { '_id': data.id })
+    if (index < 0) {
+      // fever compat
+      index = _.findIndex(state.articles, { '_id': _.toInteger(data.id) })
+    }
     if (data.type === 'FAVOURITE') {
       state.articles[index].favourite = true
     }
@@ -88,18 +144,22 @@ const mutations = {
       state.articles[index].read = false
     }
   },
-  MARK_ALL_READ (state) {
+  MARK_ALL_READ (state, data) {
+    // fever api
+    if (data.accounts.accounts[data.accounts.active].type === 'fever') {
+      let config = data.accounts.accounts[data.accounts.active]
+      MarkStat(config, 'group', 'read', 0)
+    }
     for (let i = 0; i < state.articles.length; i++) {
       state.articles[i].read = true
-      db.markRead(state.articles[i]._id)
     }
+    db.markAllRead()
   },
   DELETE_ARTICLES (state, id) {
     const articles = _.filter(state.articles, { feed_id: id })
     articles.forEach(async (article) => {
       await cacheService.uncache(`raven-${article._id}`)
     })
-    db.deleteArticles(id)
   },
   REFRESH_FEEDS (state, feeds) {
     if (feeds.length > 0) {
@@ -122,9 +182,21 @@ const mutations = {
 }
 
 const actions = {
-  loadArticles ({ commit }) {
+  cleanArticles ({ dispatch, commit }, accounts) {
+    let time = dayjs().subtract(3, 'day').unix()
+    if (accounts.accounts[accounts.active].type !== 'fever') {
+      time = dayjs().subtract(3, 'day').valueOf()
+    }
+    db.cleanArticles(time, numRemoved => {
+      console.log(`clean ${numRemoved} old articles`)
+      dispatch('refreshFeeds', accounts)
+    })
+  },
+  loadArticles ({ commit }, feeds) {
     db.fetchArticles(docs => {
-      commit('LOAD_ARTICLES', docs)
+      commit('LOAD_ARTICLES', {
+        articles: docs,
+        feeds: feeds })
     })
   },
   addArticle ({ commit }, article) {
@@ -141,11 +213,38 @@ const actions = {
         db.markUnfavourite(data.id)
         break
       case 'READ':
-        db.markRead(data.id)
+        if (data.feed_id) {
+          // mark feed as read
+          db.markFeedRead(data.feed_id)
+        } else {
+          db.markRead(data.id)
+        }
         break
       case 'UNREAD':
         db.markUnread(data.id)
         break
+    }
+    // fever api
+    if (data.accounts.accounts[data.accounts.active].type === 'fever') {
+      let config = data.accounts.accounts[data.accounts.active]
+      switch (data.type) {
+        case 'FAVOURITE':
+          MarkStat(config, 'item', 'saved', _.toInteger(data.id))
+          break
+        case 'UNFAVOURITE':
+          MarkStat(config, 'item', 'unsaved', _.toInteger(data.id))
+          break
+        case 'READ':
+          if (data.feed_id) {
+            MarkStat(config, 'feed', 'read', _.toInteger(data.feed_id))
+          } else {
+            MarkStat(config, 'item', 'read', _.toInteger(data.id))
+          }
+          break
+        case 'UNREAD':
+          MarkStat(config, 'item', 'unread', _.toInteger(data.id))
+          break
+      }
     }
     commit('MARK_ACTION', data)
   },
@@ -160,17 +259,28 @@ const actions = {
     }
     commit('SAVE_ARTICLE', data)
   },
-  markAllRead ({ commit }) {
-    commit('MARK_ALL_READ')
+  markAllRead ({ commit }, data) {
+    commit('MARK_ALL_READ', data)
   },
   async deleteArticle ({ dispatch, commit }, id) {
     commit('DELETE_ARTICLES', id)
-    await dispatch('loadArticles')
-  },
-  refreshFeeds ({ commit }) {
-    db.fetchFeeds(docs => {
-      commit('REFRESH_FEEDS', docs)
+    db.deleteArticles(id, numRemoved => {
+      console.log('del articles: ' + numRemoved)
+      dispatch('loadArticles')
     })
+  },
+  async refreshFeeds ({ dispatch, commit }, accounts) {
+    // for fever sync
+    if (accounts.accounts[accounts.active].type === 'fever') {
+      // on start refresh
+      let account = accounts.accounts[accounts.active]
+      await FeverSync(account)
+    } else {
+      db.fetchFeeds(docs => {
+        commit('REFRESH_FEEDS', docs)
+      })
+    }
+    dispatch('loadFeeds', accounts.accounts[accounts.active].type)
   },
   changeType ({ commit }, type) {
     commit('CHANGE_TYPE', type)

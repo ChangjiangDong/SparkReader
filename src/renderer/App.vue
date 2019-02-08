@@ -13,97 +13,6 @@ export default {
 <style lang="scss">
 @import 'node_modules/bootstrap/scss/bootstrap';
 
-/* open-sans-300 - latin_cyrillic-ext */
-@font-face {
-  font-family: 'Open Sans';
-  font-style: normal;
-  font-weight: 300;
-  src: local('Open Sans Light'), local('OpenSans-Light'),
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-300.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-300.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-}
-/* open-sans-300italic - latin_cyrillic-ext */
-@font-face {
-  font-family: 'Open Sans';
-  font-style: italic;
-  font-weight: 300;
-  src: local('Open Sans Light Italic'), local('OpenSans-LightItalic'),
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-300italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-300italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-}
-/* open-sans-regular - latin_cyrillic-ext */
-@font-face {
-  font-family: 'Open Sans';
-  font-style: normal;
-  font-weight: 400;
-  src: local('Open Sans Regular'), local('OpenSans-Regular'),
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-regular.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-regular.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-}
-/* open-sans-italic - latin_cyrillic-ext */
-@font-face {
-  font-family: 'Open Sans';
-  font-style: italic;
-  font-weight: 400;
-  src: local('Open Sans Italic'), local('OpenSans-Italic'),
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-}
-/* open-sans-600 - latin_cyrillic-ext */
-@font-face {
-  font-family: 'Open Sans';
-  font-style: normal;
-  font-weight: 600;
-  src: local('Open Sans SemiBold'), local('OpenSans-SemiBold'),
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-600.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-600.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-}
-/* open-sans-600italic - latin_cyrillic-ext */
-@font-face {
-  font-family: 'Open Sans';
-  font-style: italic;
-  font-weight: 600;
-  src: local('Open Sans SemiBold Italic'), local('OpenSans-SemiBoldItalic'),
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-600italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-600italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-}
-/* open-sans-700 - latin_cyrillic-ext */
-@font-face {
-  font-family: 'Open Sans';
-  font-style: normal;
-  font-weight: 700;
-  src: local('Open Sans Bold'), local('OpenSans-Bold'),
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-700.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-700.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-}
-/* open-sans-700italic - latin_cyrillic-ext */
-@font-face {
-  font-family: 'Open Sans';
-  font-style: italic;
-  font-weight: 700;
-  src: local('Open Sans Bold Italic'), local('OpenSans-BoldItalic'),
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-700italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-700italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-}
-/* open-sans-800 - latin_cyrillic-ext */
-@font-face {
-  font-family: 'Open Sans';
-  font-style: normal;
-  font-weight: 800;
-  src: local('Open Sans ExtraBold'), local('OpenSans-ExtraBold'),
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-800.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-800.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-}
-/* open-sans-800italic - latin_cyrillic-ext */
-@font-face {
-  font-family: 'Open Sans';
-  font-style: italic;
-  font-weight: 800;
-  src: local('Open Sans ExtraBold Italic'), local('OpenSans-ExtraBoldItalic'),
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-800italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-       url('./assets/fonts/open-sans-v15-latin_cyrillic-ext-800italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-}
-
 html,
 #app,
 body {
@@ -111,34 +20,29 @@ body {
   width: 100%;
   padding: 0;
   margin: 0;
+  background-color: rgb(248, 247, 245);
 }
 
 body {
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,'Open Sans', sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-family: "Helvetica Neue",Helvetica,"Microsoft YaHei","微软雅黑","PingFang SC","Hiragino Sans GB",Arial,sans-serif;
 }
 
 .sidebar {
   position: relative;
+  font-size: 14px;
   flex-grow: 0;
-  width: 300px;
+  width: 220px;
   height: 100%;
   box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.1);
 
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 99.5%;
-    height: 20px;
-    background: linear-gradient(
-    rgba(255, 255, 255, 0.5),
-    white
-    ); /* transparent keyword is broken in Safari */
-    pointer-events: none;
+  .nav-link {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 220px;
   }
 }
 
@@ -158,22 +62,16 @@ body {
   }
 }
 .sidebar .nav-link {
-  font-weight: 600;
   color: #000;
 }
 
 .sidebar .nav-link .feather {
-  margin-right: 10px;
+  margin-right: 5px;
   color: #999;
 }
 
-.sidebar .nav-link.active {
-  color: #007bff;
-}
-
-.sidebar .nav-link:hover .feather,
-.sidebar .nav-link.active .feather {
-  color: inherit;
+.sidebar .nav-link:hover .feather{
+  color: #007bff !important;
 }
 
 .sidebar .nav-link:focus {
@@ -181,9 +79,13 @@ body {
 }
 
 .sidebar-heading {
-  font-weight: 600;
-  font-size: 0.85rem;
+  font-weight: bold;
+  font-size: 12px;
   text-transform: uppercase;
+}
+
+.activeSubscri {
+  color: #007bff !important;
 }
 
 .list-group a {
@@ -199,5 +101,32 @@ body {
   border-left: 0;
   border-right: 0;
   border-radius: 0 !important
+}
+
+// 自定义Scrollbar
+::-webkit-scrollbar {
+	width: 7px;
+  height: 7px;
+	background-color: #F5F5F5;
+}
+
+::-webkit-scrollbar-track {
+  border-radius: 7px;
+  background: rgba(0,0,0,0.01);
+  border: 1px solid #ccc;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 7px;
+  background: linear-gradient(left, #fff, #e4e4e4);
+  border: 1px solid #aaa;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #fff;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(left, #22ADD4, #1E98BA);
 }
 </style>

@@ -1,35 +1,66 @@
+import FeedParser from 'feedparser'
+import got from 'got'
 import he from 'he'
-import RssParser from 'rss-parser'
-
-const parser = new RssParser({
-  defaultRSS: 2.0,
-  headers: {
-    'User-Agent': 'Raven Reader'
-  }
-})
 
 /**
  * Parse feed
  * @param  string feedUrl
  * @return array
  */
-export async function parseFeed (feedUrl, faviconUrl = null) {
-  let feed
-  const feeditem = {
+export async function parseFeed (feedUrl) {
+  const stream = await ReadFeed(feedUrl)
+  const posts = await ReadFeedStream(stream, feedUrl)
+  const response = await ParseFeedPost(posts)
+  return response
+}
+
+/**
+ * Read Feed
+ * @param string url
+ * @constructor
+ */
+export async function ReadFeed (url) {
+  const response = await got.stream(url, { retries: 0 }).on('error', error => { console.log(`ReadFeed got.stream error: ${error}`) })
+  return response
+}
+
+/**
+ * Read stream and parse it with feed parser
+ * @param Stream stream
+ * @constructor
+ */
+export async function ReadFeedStream (stream, feedUrl) {
+  const feed = {
     meta: '',
     posts: []
   }
-  feed = await parser.parseURL(feedUrl)
-  feeditem.meta = {
-    link: feed.link,
-    xmlurl: feed.feedUrl ? feed.feedUrl : feedUrl,
-    favicon: typeof faviconUrl !== 'undefined' ? faviconUrl : null,
-    description: feed.description ? feed.description : null,
-    title: feed.title
-  }
-  feeditem.posts = feed.items
-  const response = await ParseFeedPost(feeditem)
-  return response
+
+  const result = new Promise((resolve, reject) => {
+    stream.pipe(new FeedParser().on('error', reject)
+    ).on('error', reject)
+      .on('end', () => {
+        resolve(feed)
+      })
+      .on('readable', function () {
+        const streamFeed = this
+        feed.meta = {
+          link: this.meta.link,
+          xmlurl: this.meta.xmlurl ? this.meta.xmlurl : feedUrl,
+          favicon: this.meta.favicon,
+          description: this.meta.description,
+          title: this.meta.title
+        }
+        let item
+        while ((item = streamFeed.read())) {
+          feed.posts.push(item)
+        }
+      })
+  }).catch(error => {
+    console.log('ReadFeedStream got err===>')
+    console.log(error)
+  })
+
+  return result
 }
 
 /**
@@ -42,10 +73,8 @@ export function ParseFeedPost (feed) {
     item.favourite = false
     item.read = false
     item.offline = false
-    item.favicon = null
-    item.feed_title = feed.meta.title
-    if (item.content) {
-      item.content = he.unescape(item.content)
+    if (item.summary) {
+      item.summary = he.unescape(item.summary)
     }
     return item
   })

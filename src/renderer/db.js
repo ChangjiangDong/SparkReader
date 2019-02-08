@@ -1,39 +1,62 @@
-import jetpack from 'fs-jetpack'
-import fs from 'fs'
-import DataStore from 'nedb'
-import { remote } from 'electron'
+import DataStore from 'linvodb3'
+import Store from 'electron-store'
 
-export default class {
+const store = new Store()
+
+export default class DBConnection {
   constructor () {
     this.db = null
-    this.useDataDir = jetpack.cwd(remote.app.getPath('home'))
+    this.instance = null
+    this.accountName = 'default'
+    this.type = 'local'
+    if (store.get('accounts')) {
+      const accounts = store.get('accounts')
+      this.accountName = accounts.default
+      this.type = accounts.accounts[this.accountName].type
+    }
+  }
+
+  static getInstance () {
+    if (!this.instance) {
+      this.instance = new DBConnection()
+    }
+
+    let acctName = 'default'
+    let accounts
+    if (store.get('accounts')) {
+      accounts = store.get('accounts')
+      acctName = accounts.active
+    }
+    if (acctName) {
+      if (acctName !== this.instance.accountName) {
+        // acount changed, close old db
+        if (this.instance.db) {
+          this.instance.db.article.close()
+          this.instance.db.feed.close()
+          this.instance.db.favicon.close()
+          this.instance.db = null
+        }
+        this.instance.accountName = acctName
+        this.instance.type = accounts.accounts[acctName].type
+      }
+    }
+
+    return this.instance
   }
 
   createOrReadDatabase (db) {
-    const dirName = process.env.NODE_ENV === 'development' ? '.rss-reader-dev' : '.rss-reader'
-    const existsDir = jetpack.exists(this.useDataDir.path(dirName))
-    if (!existsDir) {
-      fs.mkdir(this.useDataDir.path(`${dirName}`), (err) => {
-        if (err) {}
-      })
-    }
-    const existsArticle = fs.existsSync(this.useDataDir.path(`${dirName}/${db.article}`))
-    const existsFeed = fs.existsSync(this.useDataDir.path(`${dirName}/${db.feed}`))
     let database = {}
-
-    if (!existsArticle && !existsFeed) {
-      this.useDataDir.write(this.useDataDir.path(`${dirName}/${db.article}`), '')
-      this.useDataDir.write(this.useDataDir.path(`${dirName}/${db.feed}`), '')
-    }
-
-    database.article = new DataStore({
-      filename: this.useDataDir.path(`${dirName}/${db.article}`),
-      autoload: true
+    DataStore.dbPath = process.cwd()
+    database.article = new DataStore('article', {
+      filename: `./db/${this.accountName}/${db.article}`
     })
 
-    database.feed = new DataStore({
-      filename: this.useDataDir.path(`${dirName}/${db.feed}`),
-      autoload: true
+    database.feed = new DataStore('feed', {
+      filename: `./db/${this.accountName}/${db.feed}`
+    })
+
+    database.favicon = new DataStore('favicon', {
+      filename: `./db/${this.accountName}/${db.favicon}`
     })
 
     return database
@@ -43,10 +66,10 @@ export default class {
     if (this.db) {
       return this.db
     }
-
     this.db = this.createOrReadDatabase({
       article: 'articles.db',
-      feed: 'feeds.db'
+      feed: 'feeds.db',
+      favicon: 'favicon.db'
     })
 
     return this.db

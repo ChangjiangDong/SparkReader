@@ -1,35 +1,19 @@
 import store from '../store'
 import { parseFeed } from '../parsers/feed'
-import uuid from 'uuid-by-string'
+import uuid from 'uuid/v4'
 import opmlGenerator from 'opml-generator'
 import async from 'async'
-// import faviconoclast from 'faviconoclast'
+import faviconoclastpaoxy from '../helper/faviconoclastpaoxy'
 import db from './db.js'
-import notifier from 'node-notifier'
-import _ from 'lodash'
-import axios from 'axios'
-import ElectronStore from 'electron-store'
-
-const electronStore = new ElectronStore()
+import dayjs from 'dayjs'
+// import notifier from 'node-notifier'
+// import _ from 'lodash'
 
 export default {
-  async syncInoReader () {
-    const token = JSON.parse(electronStore.get('inoreader_token')).access_token
-    const subscriptionLists = await axios.get('https://www.inoreader.com/reader/api/0/subscription/list', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-    const rssFeedUrls = subscriptionLists.data.subscriptions.map((item) => {
-      item.feedUrl = item.url
-      return item
-    })
-    this.subscribe(rssFeedUrls, null, false)
-  },
   exportOpml () {
     const header = {
       'title': 'RSS Reader',
-      'dateCreated': new Date(2014, 2, 9)
+      'dateCreated': dayjs().unix()
     }
     const outlines = []
     store.state.Feed.feeds.forEach((feed) => {
@@ -48,26 +32,27 @@ export default {
     const q = async.queue((task, cb) => {
       if (!refresh) {
         task.feed.meta.favicon = task.favicon
-        task.feed.meta.id = uuid(task.feed.meta.xmlurl)
+        task.feed.meta.id = uuid()
         store.dispatch('addFeed', task.feed.meta)
       }
       task.feed.posts.forEach((post) => {
         post.feed_id = task.feed.meta.id
-        post.favicon = task.favicon
-        post.guid = uuid(post.link)
+        post.meta.favicon = task.favicon
+        if (!post.pubdate) {
+          post.pubdate = dayjs().valueOf()
+          post.pubDate = dayjs().valueOf()
+        }
         if (refresh) {
           db.addArticles(post, docs => {
             if (typeof docs !== 'undefined') {
-              notifier.notify({
-                type: 'info',
-                icon: post.favicon,
-                title: post.title,
-                timeout: 3,
-                message: _.truncate(post.content.replace(/<(?:.|\n)*?>/gm, '')),
-                sticky: true,
-                wait: false,
-                sound: false
-              })
+              // notifier.notify({
+              //   icon: post.meta.favicon,
+              //   title: post.title,
+              //   message: _.truncate(post.description.replace(/<(?:.|\n)*?>/gm, '')),
+              //   sticky: false,
+              //   wait: false,
+              //   sound: true
+              // })
             }
           })
         } else {
@@ -84,7 +69,6 @@ export default {
     feeds.forEach(async function (feed) {
       let faviconUrl
       let url
-
       if (!importData) {
         url = feed.url
       }
@@ -97,14 +81,28 @@ export default {
         url = feed.feedUrl
       }
 
-      const feeditem = await parseFeed(url, faviconUrl)
+      const htmlLink = feed.link ? feed.link : feed.url
+      const feeditem = await parseFeed(url)
+      if (refresh) {
+        feeditem.meta.id = feed.id
+      }
       if (faviconData) {
         faviconUrl = faviconData
       } else {
-        faviconUrl = `https://www.google.com/s2/favicons?domain=${feeditem.meta.link}`
-      }
-      if (refresh) {
-        feeditem.meta.id = feed.id
+        try {
+          faviconUrl = await new Promise((resolve, reject) => {
+            faviconoclastpaoxy(htmlLink, (err, iconUrl) => {
+              if (err) {
+                reject(err)
+              }
+              resolve(iconUrl)
+            })
+          })
+        } catch (error) {
+          faviconUrl = ''
+          console.log('faviconUrl Promise got err===>')
+          console.log(error)
+        }
       }
       q.push({ feed: feeditem, favicon: faviconUrl })
     })

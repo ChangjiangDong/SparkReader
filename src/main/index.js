@@ -1,17 +1,10 @@
 'use strict'
 
 import { app, BrowserWindow, Menu, Tray, ipcMain } from 'electron'
-import updateElectron from 'update-electron-app'
-// import electronLog from 'electron-log'
+import electronLog from 'electron-log'
 import jetpack from 'fs-jetpack'
 import os from 'os'
 import Store from 'electron-store'
-
-updateElectron({
-  repo: 'mrgodhani/raven-reader',
-  updateInterval: '1 hour'
-  // logger: electronLog
-})
 
 /**
 * Set `__static` path to static files in production
@@ -27,33 +20,33 @@ let tray
 const winURL = process.env.NODE_ENV === 'development' ? `http://localhost:9080` : `file://${__dirname}/index.html`
 const store = new Store()
 
-function createMenu () {
-  // Create the Application's main menu
-  const template = [{
-    label: 'Application',
-    submenu: [
-      { label: 'About Application', selector: 'orderFrontStandardAboutPanel:' },
-      { type: 'separator' },
-      { label: 'Quit',
-        accelerator: 'Command+Q',
-        click: function () {
-          app.quit()
-        } }
-    ] }, {
-    label: 'Edit',
-    submenu: [
-      { label: 'Undo', accelerator: 'CmdOrCtrl+Z', selector: 'undo:' },
-      { label: 'Redo', accelerator: 'Shift+CmdOrCtrl+Z', selector: 'redo:' },
-      { type: 'separator' },
-      { label: 'Cut', accelerator: 'CmdOrCtrl+X', selector: 'cut:' },
-      { label: 'Copy', accelerator: 'CmdOrCtrl+C', selector: 'copy:' },
-      { label: 'Paste', accelerator: 'CmdOrCtrl+V', selector: 'paste:' },
-      { label: 'Select All', accelerator: 'CmdOrCtrl+A', selector: 'selectAll:' }
-    ] }
-  ]
+// function createMenu () {
+//   // Create the Application's main menu
+//   const template = [{
+//     label: 'Application',
+//     submenu: [
+//       { label: 'About Application', selector: 'orderFrontStandardAboutPanel:' },
+//       { type: 'separator' },
+//       { label: 'Quit',
+//         accelerator: 'Command+Q',
+//         click: function () {
+//           app.quit()
+//         } }
+//     ] }, {
+//     label: 'Edit',
+//     submenu: [
+//       { label: 'Undo', accelerator: 'CmdOrCtrl+Z', selector: 'undo:' },
+//       { label: 'Redo', accelerator: 'Shift+CmdOrCtrl+Z', selector: 'redo:' },
+//       { type: 'separator' },
+//       { label: 'Cut', accelerator: 'CmdOrCtrl+X', selector: 'cut:' },
+//       { label: 'Copy', accelerator: 'CmdOrCtrl+C', selector: 'copy:' },
+//       { label: 'Paste', accelerator: 'CmdOrCtrl+V', selector: 'paste:' },
+//       { label: 'Select All', accelerator: 'CmdOrCtrl+A', selector: 'selectAll:' }
+//     ] }
+//   ]
 
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
-}
+//   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+// }
 
 function createTray () {
   if (os.platform() === 'darwin') {
@@ -112,14 +105,17 @@ function createWindow () {
       nodeIntegrationInWorker: true,
       webSecurity: false
     },
-    minHeight: 768,
-    minWidth: 1204,
-    width: 1204,
-    height: 768
+    minHeight: 800,
+    minWidth: 1200,
+    width: 1400,
+    height: 768,
+    autoHideMenuBar: true
   })
 
   mainWindow.loadURL(winURL)
+  // mainWindow.webContents.openDevTools()
 
+  // web view proxy
   const proxy = store.get('settings.proxy') ? store.get('settings.proxy') : null
   let proxyRules = 'direct://'
   if (proxy) {
@@ -130,7 +126,7 @@ function createWindow () {
       proxyRules = `http=${proxy.http};https=${proxy.https},${proxyRules}`
     }
   }
-  // electronLog.info(`Applying proxy ${proxyRules}`)
+  electronLog.info(`Applying proxy ${proxyRules}`)
   mainWindow.webContents.session.setProxy({
     proxyRules: proxyRules,
     proxyBypassRules: proxy && proxy.bypass ? proxy.bypass : '<local>' }, () => {
@@ -139,33 +135,34 @@ function createWindow () {
 
   mainWindow.on('closed', () => {
     mainWindow = null
-    // electronLog.info('Closing app')
+    electronLog.info('Closing app')
   })
 
   mainWindow.on('close', (event) => {
-    if (app.isQuiting) {
-      mainWindow = null
-    } else {
-      event.preventDefault()
-      mainWindow.hide()
-      if (process.platform === 'darwin') {
-        app.dock.hide()
-      }
-      // electronLog.info('Hiding dock icon and browser window')
-      return false
-    }
+    mainWindow = null
+    // if (app.isQuiting) {
+    //   mainWindow = null
+    // } else {
+    //   event.preventDefault()
+    //   mainWindow.hide()
+    //   if (process.platform === 'darwin') {
+    //     app.dock.hide()
+    //   }
+    //   electronLog.info('Hiding dock icon and browser window')
+    //   return false
+    // }
   })
 
-  createMenu()
+  // createMenu()
   createTray()
 }
 
 app.requestSingleInstanceLock()
 app.on('second-instance', (event, argv, cwd) => {
-  // electronLog.info(
-  //   'Detected a newer instance. Closing this instance.',
-  //   app.getVersion()
-  // )
+  electronLog.info(
+    'Detected a newer instance. Closing this instance.',
+    app.getVersion()
+  )
   app.quit()
 })
 
@@ -174,7 +171,7 @@ app.on('ready', () => {
 })
 
 app.on('before-quit', () => {
-  // electronLog.info('Setting isQuiting to true')
+  electronLog.info('Setting isQuiting to true')
   app.isQuiting = true
 })
 

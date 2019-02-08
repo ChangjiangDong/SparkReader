@@ -25,10 +25,8 @@
 import oauth from '../services/oauth'
 import { URL } from 'url'
 import { setImmediate } from 'timers'
+import axios from 'axios'
 import helper from '../services/helpers'
-import Store from 'electron-store'
-
-const store = new Store()
 
 export default {
   data () {
@@ -37,7 +35,7 @@ export default {
     }
   },
   mounted () {
-    if (store.get('inoreader_token')) {
+    if (localStorage.getItem('inoreader_token')) {
       this.inoreader_connected = true
     }
   },
@@ -45,33 +43,24 @@ export default {
     signInWithPopUp () {
       return new Promise((resolve, reject) => {
         const authWindow = new this.$electron.remote.BrowserWindow({
-          width: 1024,
-          height: 720,
-          show: true,
-          webPreferences: {
-            nodeIntegration: false,
-            devTools: false
-          }
+          width: 500,
+          height: 600,
+          show: true
         })
         const ses = authWindow.webContents.session
-        ses.clearStorageData({
-          storages: ['localStorage', 'cookies']
-        })
+        ses.clearStorageData()
         const authUrl = oauth.buildAuthUrl()
 
         function handleNavigation (url) {
-          const urlItem = new URL(url)
-          const params = urlItem.searchParams
-          const hostname = urlItem.hostname
-          console.log(params)
+          const params = new URL(url).searchParams
           if (params) {
             if (params.get('error')) {
               authWindow.removeAllListeners('closed')
               setImmediate(() => authWindow.close())
               resolve(false)
-            } else if (hostname === '127.0.0.1' && params.get('code')) {
+            } else if (params.get('code')) {
               authWindow.removeAllListeners('closed')
-              authWindow.close()
+              setImmediate(() => authWindow.close())
               resolve(params.get('code'))
             }
           }
@@ -102,7 +91,17 @@ export default {
       this.inoreader_connected = false
     },
     async syncFeedsFromInoreader () {
-      await helper.syncInoReader()
+      const token = JSON.parse(localStorage.getItem('inoreader_token')).access_token
+      const subscriptionLists = await axios.get('https://www.inoreader.com/reader/api/0/subscription/list', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      const rssFeedUrls = subscriptionLists.data.subscriptions.map((item) => {
+        item.feedUrl = item.url
+        return item
+      })
+      helper.subscribe(rssFeedUrls, null, false)
     },
     async signIn () {
       let token
@@ -116,7 +115,7 @@ export default {
       }
 
       if (token) {
-        store.set('inoreader_token', JSON.stringify(token))
+        localStorage.setItem('inoreader_token', JSON.stringify(token))
         this.inoreader_connected = true
       }
     }

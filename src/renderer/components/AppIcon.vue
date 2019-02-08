@@ -38,6 +38,6 @@ export default {
 }
 
 .feather-filled {
-  fill: #000;
+  fill: rgb(65, 65, 65);
 }
 </style>

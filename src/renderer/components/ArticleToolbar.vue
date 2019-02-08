@@ -2,15 +2,15 @@
   <div class="article-toolbar" v-if="article !== null && article.content !== null">
     <div class="site-info">
       <div class="wrap">
-        <button class="btn btn-toolbar">
+        <a :href="article.sitelink" class="btn btn-toolbar js-external-link" v-b-tooltip.hover :title="article.sitetitle">
           <span v-if="article.favicon" class="favicon-wrap">
             <img :src="article.favicon" width="16" height="16">
           </span>
           <span :class="{ 'ml-4': article.favicon }">{{ article.sitetitle }}</span>
-        </button>
+        </a>
       </div>
     </div>
-    <div class="article-buttons">
+    <div class="article-buttons">      
       <div class="wrap">
         <button class="btn btn-toolbar" @click="markFavourite" v-b-tooltip.hover :title="markFavouriteButton">
           <feather-icon name="star" :filled="article.favourite"></feather-icon>
@@ -22,15 +22,18 @@
         </button>
       </div>
       <div class="wrap">
-        <a :href="article.url" class="btn btn-toolbar js-external-link" v-b-tooltip.hover title="Open in browser">
+        <a :href="article.url" class="btn btn-toolbar js-external-link" v-b-tooltip.hover title="Open in browser" ref="openlink">
           <feather-icon name="external-link"></feather-icon>
         </a>
       </div>
       <div class="wrap">
-        <button class="btn btn-toolbar" @click="saveArticle" v-b-tooltip.hover title="Save article">
+        <button v-if="this.$store.state.Accounts.type != 'fever'" class="btn btn-toolbar" @click="saveArticle" v-b-tooltip.hover title="Save article">
           <feather-icon name="wifi-off" :success="article.offline"></feather-icon>
         </button>
       </div>
+      <!-- <div class="wrap">
+        <colorPicker class="color-picker" v-model="color" v-on:change="headleChangeColor" defaultColor="#F8F7F5"/>
+      </div> -->
     </div>
   </div>
 </template>
@@ -45,6 +48,11 @@ const markTypes = {
   uncache: 'UNCACHE'
 }
 export default {
+  data () {
+    return {
+      color: '#F8F7F5'
+    }
+  },
   props: {
     article: {
       type: Object
@@ -59,19 +67,28 @@ export default {
     }
   },
   methods: {
+    headleChangeColor () {
+      const matches = document.querySelectorAll('.list-group-item')
+      const color = this.color
+      matches.forEach(function (item) {
+        item.setAttribute('style', 'background-color: ' + color + ' !important')
+      })
+      document.querySelector('.article-contentarea').setAttribute('style', 'background-color: ' + color + ' !important')
+    },
     markFavourite () {
       if (this.article.favourite) {
         this.$store.dispatch('markAction', {
           type: markTypes.unfavourite,
-          id: this.$route.params.id
+          id: this.$route.params.id,
+          accounts: this.$store.state.Accounts.accounts
         })
       } else {
         this.$store.dispatch('markAction', {
           type: markTypes.favourite,
-          id: this.$route.params.id
+          id: this.$route.params.id,
+          accounts: this.$store.state.Accounts.accounts
         })
       }
-      this.article.favourite = !this.article.favourite
     },
     saveArticle () {
       const self = this
@@ -97,15 +114,16 @@ export default {
       if (this.article.read) {
         this.$store.dispatch('markAction', {
           type: markTypes.unread,
-          id: this.$route.params.id
+          id: this.$route.params.id,
+          accounts: this.$store.state.Accounts.accounts
         })
       } else {
         this.$store.dispatch('markAction', {
           type: markTypes.read,
-          id: this.$route.params.id
+          id: this.$route.params.id,
+          accounts: this.$store.state.Accounts.accounts
         })
       }
-      this.article.read = !this.article.read
     }
   }
 }
@@ -120,6 +138,7 @@ export default {
   width: 100%;
   border-bottom: 1px solid #e3e3e3;
   height: 41px;
+  // background-color: rgb(248, 247, 245);
 }
 
 .site-info,
@@ -127,14 +146,14 @@ export default {
   display: block;
   position: absolute;
   top: 0;
-  width: 270px;
+  width: 350px;
   height: 40px;
   z-index: 1;
-  background-image: linear-gradient(to right, rgba(255,255,255,0) 0%, #fff 10%);
+  // background-image: linear-gradient(to right, rgba(255,255,255,0) 0%, #fff 10%);
 }
 
 .site-info {
-  width: 350px;
+  width: 600px;
   left: 0;
 
   .btn-toolbar {
@@ -154,8 +173,21 @@ export default {
   }
 }
 
+.wrap {
+  height: 40px;
+  line-height: 40px;
+}
+
+.color-picker {
+  border: 2px solid #e3e3e3;
+  margin-right: 80px;
+  .box {
+    width: 220px !important;
+  }
+}
+
 .btn-toolbar {
-  color: black;
+  color: rgb(65, 65, 65);
   display: block !important;
   z-index: 2;
   background: transparent;
@@ -167,11 +199,17 @@ export default {
   position: relative;
 
   &:hover {
-    color: black;
+    color: #007bff !important;
   }
+
   &:focus {
-    outline: 0;
-    box-shadow: none;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  &:active {
+    outline: none !important;
+    box-shadow: none !important;
   }
 }
 
