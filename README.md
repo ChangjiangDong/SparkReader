@@ -5,14 +5,14 @@
 SparkReader is an RSS reader based on Raven reader. For China GFW reason, it cancelled the full-text grab of Mecury api (it is recommended use the full-text RSS on server side) .
 Key Enhancements / Modifications:
 
-- [ x ] supports the Fever API and syncing with self-host RSS servers like minilux and Tiny Tiny RSS
-- [ X ] supports global proxies
-- [ x ] uses linvodb3(leveldb) database for better performance
-- [ x ] keyboard shortcuts support, reading more efficient
-- [ X ] multi-account support (local, Fever)
-- [ x ] a series of robustness and interaction details improvements (refer to MacOS Reeder)
+- [x] supports the Fever API and syncing with self-host RSS servers like minilux and Tiny Tiny RSS
+- [x] supports global proxies
+- [x] uses linvodb3(leveldb) database for better performance
+- [x] keyboard shortcuts support, reading more efficient
+- [x] multi-account support (local, Fever)
+- [x] a series of robustness and interaction details improvements (refer to MacOS Reeder)
 
-SCREENSHOT：
+**SCREENSHOT**
 
 ![SparkReader-screenshot](./.img/SparkReader-screenshot.png)
 
